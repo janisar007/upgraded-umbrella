@@ -1,0 +1,45 @@
+name: Flaky Test Simulation
+
+on:
+  schedule:
+    - cron: '*/16 * * * *'
+  workflow_dispatch:
+
+jobs:
+  setup-and-pr:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Create flaky test file
+      run: |
+        echo "Creating flaky test file..."
+        echo "describe('Flaky test', () => {" > flaky.test.js
+        echo "  it('should sometimes fail', () => {" >> flaky.test.js
+        echo "    if (Math.random() < 0.4) throw new Error('Random test failure');" >> flaky.test.js
+        echo "  });" >> flaky.test.js
+        echo "});" >> flaky.test.js
+        echo '{ "name": "flaky-test", "scripts": { "test": "jest" } }' > package.json
+        npm install jest --save-dev
+        
+    - name: Create PR
+      run: |
+        git checkout -b flaky-test-$(date +%s)
+        git add .
+        git config --global user.name "GitHub Actions"
+        git config --global user.email "actions@github.com"
+        git commit -m "Add flaky test"
+        git push origin HEAD
+        gh pr create --title "Flaky test PR" --body "Automated flaky test PR" --head $(git branch --show-current)
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  test:
+    needs: setup-and-pr
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-node@v3
+      with:
+        node-version: 18.x
+    - run: npm test
