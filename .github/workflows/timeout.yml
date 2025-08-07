@@ -1,0 +1,40 @@
+name: Timeout Simulation
+
+on:
+  schedule:
+    - cron: '*/19 * * * *'
+  workflow_dispatch:
+
+jobs:
+  setup-and-pr:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Create timeout script
+      run: |
+        echo "Creating timeout script..."
+        echo "#!/bin/bash" > timeout.sh
+        echo "echo 'This task will run for a random time'" >> timeout.sh
+        echo "sleep \$((RANDOM % 120))" >> timeout.sh
+        chmod +x timeout.sh
+        
+    - name: Create PR
+      run: |
+        git checkout -b timeout-test-$(date +%s)
+        git add .
+        git config --global user.name "GitHub Actions"
+        git config --global user.email "actions@github.com"
+        git commit -m "Add timeout test script"
+        git push origin HEAD
+        gh pr create --title "Timeout test PR" --body "Automated timeout test PR" --head $(git branch --show-current)
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  test-timeout:
+    needs: setup-and-pr
+    runs-on: ubuntu-latest
+    timeout-minutes: 1  # Short timeout to force failures
+    steps:
+    - uses: actions/checkout@v4
+    - run: ./timeout.sh
