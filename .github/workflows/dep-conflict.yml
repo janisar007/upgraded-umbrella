@@ -1,0 +1,52 @@
+name: Dependency Conflict Test
+
+on:
+  schedule:
+    - cron: '*/17 * * * *'
+  workflow_dispatch:
+
+jobs:
+  setup-and-pr:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Create conflicting package.json
+      run: |
+        echo "Creating package.json with potential conflicts..."
+        echo '{' > package.json
+        echo '  "name": "dep-conflict-test",' >> package.json
+        echo '  "dependencies": {' >> package.json
+        echo '    "lodash": "4.17.20",' >> package.json
+        echo '    "chalk": "4.1.0"' >> package.json
+        echo '  },' >> package.json
+        echo '  "devDependencies": {' >> package.json
+        if [ $((RANDOM % 2)) -eq 0 ]; then
+          echo '    "lodash": "3.10.1"' >> package.json  # Incompatible version
+        else
+          echo '    "chalk": "5.0.0"' >> package.json   # Major version conflict
+        fi
+        echo '  }' >> package.json
+        echo '}' >> package.json
+        
+    - name: Create PR
+      run: |
+        git checkout -b dep-test-$(date +%s)
+        git add .
+        git config --global user.name "GitHub Actions"
+        git config --global user.email "actions@github.com"
+        git commit -m "Add package.json with potential conflicts"
+        git push origin HEAD
+        gh pr create --title "Dependency test PR" --body "Automated dependency test PR" --head $(git branch --show-current)
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  install:
+    needs: setup-and-pr
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-node@v3
+      with:
+        node-version: 18.x
+    - run: npm install
