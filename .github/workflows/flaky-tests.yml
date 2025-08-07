@@ -32,7 +32,7 @@ jobs:
         git push origin HEAD
         gh pr create --title "Flaky test PR" --body "Automated flaky test PR" --head $(git branch --show-current)
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.PAT }}
 
   test:
     needs: setup-and-pr
