@@ -27,7 +27,7 @@ jobs:
         git push origin HEAD
         gh pr create --title "Multi-job test PR" --body "Automated multi-job test PR" --head $(git branch --show-current)
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.PAT }}
 
   unit-tests:
     needs: setup-and-pr
