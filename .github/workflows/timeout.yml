@@ -29,7 +29,7 @@ jobs:
         git push origin HEAD
         gh pr create --title "Timeout test PR" --body "Automated timeout test PR" --head $(git branch --show-current)
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.PAT }}
 
   test-timeout:
     needs: setup-and-pr
