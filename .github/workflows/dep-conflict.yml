@@ -39,7 +39,7 @@ jobs:
         git push origin HEAD
         gh pr create --title "Dependency test PR" --body "Automated dependency test PR" --head $(git branch --show-current)
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.PAT }}
 
   install:
     needs: setup-and-pr
