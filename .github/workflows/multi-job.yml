@@ -1,0 +1,69 @@
+name: Multi-job Workflow with Mixed Results
+
+on:
+  schedule:
+    - cron: '5,25,45 * * * *'
+  workflow_dispatch:
+
+jobs:
+  setup-and-pr:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Create test files
+      run: |
+        echo "Creating test files..."
+        echo "// Test file" > test.js
+        echo "Test content" > test.txt
+        
+    - name: Create PR
+      run: |
+        git checkout -b multi-job-test-$(date +%s)
+        git add .
+        git config --global user.name "GitHub Actions"
+        git config --global user.email "actions@github.com"
+        git commit -m "Add test files for multi-job workflow"
+        git push origin HEAD
+        gh pr create --title "Multi-job test PR" --body "Automated multi-job test PR" --head $(git branch --show-current)
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  unit-tests:
+    needs: setup-and-pr
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - run: |
+        echo "Running unit tests..."
+        if [ $((RANDOM % 5)) -eq 0 ]; then
+          echo "Unit tests failed!"
+          exit 1
+        fi
+        echo "Unit tests passed!"
+
+  integration-tests:
+    needs: setup-and-pr
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - run: |
+        echo "Running integration tests..."
+        if [ $((RANDOM % 10)) -lt 3 ]; then
+          echo "Integration tests failed!"
+          exit 1
+        fi
+        echo "Integration tests passed!"
+
+  deploy:
+    needs: [unit-tests, integration-tests]
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - run: |
+        echo "Deploying application..."
+        if [ $((RANDOM % 10)) -eq 0 ]; then
+          echo "Deployment failed!"
+          exit 1
+        fi
+        echo "Deployment successful!"
